@@ -61,7 +61,7 @@ type Token =
     | LET
     | WRITE
     | ARITH_OP
-    | RELATIONAL
+    | REL_OP
     | UNTIL
     | REPEAT
     | IF
@@ -75,6 +75,7 @@ type Token =
     | EOF
     | DO
     | WHILE
+    | DONE
     | NUMBER //any integer
     | OTHER of string // Could represent and ID in a more complex language, but for now, just a catch-all for anything else.
      
@@ -96,7 +97,7 @@ type Token =
             | "write" -> WRITE
             | "+"| "-" | "*" | "/" -> ARITH_OP
             
-            | "<" | ">" | "==" -> RELATIONAL
+            | "<" | ">" | "==" -> REL_OP
             | "until" -> UNTIL
             | "repeat" -> REPEAT
             | "if" -> IF
@@ -110,6 +111,7 @@ type Token =
             | "while" -> WHILE
             | "<-" -> FUN_CALL
             | "$$" -> EOF
+            | "done" -> DONE
             | x -> OTHER str  // aka, ID
 
 
@@ -123,8 +125,8 @@ type Token =
 <EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
 <EXPR_TAIL> ::= arith_op <EXPR> | ε
 <ARITH_OP> ::= + | - | * | /
-<REL_OPER> ::= > | < | ==
-<COND> ::= <EXPR> <REL_OPER> <EXPR>
+<REL_OP> ::= > | < | ==
+<COND> ::= <EXPR> <REL_OP> <EXPR>
 <ASGIGNMENT> ::= assign <EXPR> 
 <READ_STMT> ::= read id
 <WRITE_STMT> ::= write expr 
@@ -261,17 +263,64 @@ and expr_tail =
     | xs -> xs
 
 //<ARITH_OP> ::= + | - | * | /
+and arith_op = 
+    function
+    | xs -> xs |> matchToken = ARITH_OP
+
 //<REL_OPER> ::= > | < | ==
+and rel_op = 
+    function
+    | xs -> xs |> matchToken = REL_OP
+
 //<COND> ::= <EXPR> <REL_OPER> <EXPR>
+and cond =
+    function
+    | expr :: xs -> xs |> rel_op |> expr
+
 //<ASGIGNMENT> ::= assign <EXPR> 
+and assignment =
+    function   
+    ASSIGN:: xs -> xs |> expr
+
 //<READ_STMT> ::= read id
+and read_stmt =
+    function 
+    |  READ:: xs -> xs |> matchToken = id
+
 //<WRITE_STMT> ::= write expr 
+and write_stmt =
+    function 
+    |  WRITE:: xs -> xs |> matchToken = id
+
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
+and if_stmt =
+    function 
+    | IF :: xs -> xs |> cond |> THEN |> stmt |> ELSE |> stmt |> ENDIF
+
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
+and fun_call = 
+    function 
+    | x :: xs -> xs |> OPEN_P |> param_list |> CLOSE_P
+
 //<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
+and param_list =
+    function
+    | expr :: xs -> xs |> param_tail
+
 //<PARAM_TAIL> ::= , <PARAM_LIST> | ε
+and param_tail =
+    function
+    | ADJ_SEP :: xs -> xs |> param_list
+    | xs -> xs
+
 //<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
+and while_stmt = 
+    function
+    |WHILE :: xs -> xs |> cond |> DO |> stmt_list |> DONE
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
+and do_stmt = 
+    function
+    | DO :: xs -> xs |> stmt_list |> UNTIL |> cond
 
 (* **********************************************************************************************
    YOU MAY LEAVE THE FOLLOWING CODE AS IS.  IT IS NOT NECESSARY TO MODIFY IT FOR THIS ASSIGNMENT.
