@@ -60,8 +60,7 @@ type Token =
     | READ // read statement  
     | LET
     | WRITE
-    | ADD
-    | MULTIPLY
+    | ARITH_OP
     | RELATIONAL
     | UNTIL
     | REPEAT
@@ -95,8 +94,8 @@ type Token =
             | "," -> ADJ_SEP
             | "read" -> READ
             | "write" -> WRITE
-            | "+"| "-" -> ADD
-            | "*" | "/" -> MULTIPLY
+            | "+"| "-" | "*" | "/" -> ARITH_OP
+            
             | "<" | ">" | "==" -> RELATIONAL
             | "until" -> UNTIL
             | "repeat" -> REPEAT
@@ -117,24 +116,24 @@ type Token =
 
 (* OUR ADDED METHODS
 
- * <PROGRAM> ::= <STMT_LIST> $$
- * <STMT_LIST> ::= <STMT> <STMT_LIST> | ε
- * <STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
- * <ID_TAIL> ::= <FUNC_CALL> | assign
- * <EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
- * <EXPR_TAIL> ::= arith_op <EXPR> | ε
- * <ARITH_OP> ::= + | - | * | /
- * <REL_OPER> ::= > | < | ==
- * <COND> ::= <EXPR> <REL_OPER> <EXPR>
- * <ASGIGNMENT> ::= assign <EXPR> 
- * <READ_STMT> ::= read id
- * <WRITE_STMT> ::= write expr 
- * <IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
- * <FUN_CALL> ::= id open_p <PARAM_LIST> close_p
- * <PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
- * <PARAM_TAIL> ::= , <PARAM_LIST> | ε
- * <WHILE_STMT> ::= while <COND> do <STMT_LIST> done
- * <DO_STMT> ::= do <STMT_LIST> until <COND>
+<PROGRAM> ::= <STMT_LIST> $$
+<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
+<STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
+<ID_TAIL> ::= <FUNC_CALL> | assign
+<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
+<EXPR_TAIL> ::= arith_op <EXPR> | ε
+<ARITH_OP> ::= + | - | * | /
+<REL_OPER> ::= > | < | ==
+<COND> ::= <EXPR> <REL_OPER> <EXPR>
+<ASGIGNMENT> ::= assign <EXPR> 
+<READ_STMT> ::= read id
+<WRITE_STMT> ::= write expr 
+<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
+<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
+<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
+<PARAM_TAIL> ::= , <PARAM_LIST> | ε
+<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
+<DO_STMT> ::= do <STMT_LIST> until <COND>
  *)
 let matchToken (theExpectedToken: Token) theList =
     match theList with
@@ -223,25 +222,56 @@ and vp =
     | [] -> failwith "Unexpected end of input while processing Verb Phrase."
 
 //<PROGRAM> ::= <STMT_LIST> $$
-and PROGRAM =
+and program =
     function
     | STMT_LIST :: xs -> xs |> matchToken = EOF
 
 //<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
-and STMT_LIST = 
+and stmt_list = 
     function
     | STMT :: xs -> xs |> STMT_LIST
     | xs -> xs
 
-//<STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
-and STMT = 
+//<STMT> ::= id <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
+and stmt = 
     function
     | ID :: xs -> xs |> ID_TAIL
-    | READ
-    | WRITE
-    | IF
-    | DO
-    | WHILE
+    | READ_STMT 
+    | WRITE_STMT
+    | IF_STMT
+    | DO_STMT
+    | WHILE_STMT
+
+//<ID_TAIL> ::= <FUN_CALL> | assign
+and id_tail = 
+    function
+    | FUN_CALL
+    | ASSIGN
+
+//<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
+and expr = 
+    function
+    | ID :: xs -> xs |> expr_tail
+    | OPEN_P :: xs -> xs |> expr |> matchToken = CLOSE_P
+
+//<EXPR_TAIL> ::= arith_op <EXPR> | ε
+and expr_tail = 
+    function 
+    | ARITH_OP :: xs -> xs |> expr
+    | xs -> xs
+
+//<ARITH_OP> ::= + | - | * | /
+//<REL_OPER> ::= > | < | ==
+//<COND> ::= <EXPR> <REL_OPER> <EXPR>
+//<ASGIGNMENT> ::= assign <EXPR> 
+//<READ_STMT> ::= read id
+//<WRITE_STMT> ::= write expr 
+//<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
+//<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
+//<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
+//<PARAM_TAIL> ::= , <PARAM_LIST> | ε
+//<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
+//<DO_STMT> ::= do <STMT_LIST> until <COND>
 
 (* **********************************************************************************************
    YOU MAY LEAVE THE FOLLOWING CODE AS IS.  IT IS NOT NECESSARY TO MODIFY IT FOR THIS ASSIGNMENT.
