@@ -54,6 +54,29 @@ type Token =
     | COMMA
     | CONJUNCTION
     | EOS // End of Sentence (period, exclamation point, etc.)
+    
+    //Start of new Token Set
+    | ADJ_SEP
+    | READ // read statement  
+    | LET
+    | WRITE
+    | ADD
+    | MULTIPLY
+    | RELATIONAL
+    | UNTIL
+    | REPEAT
+    | IF
+    | ELSE
+    | THEN
+    | ENDIF
+    | OPEN_P
+    | CLOSE_P
+    | ASSIGN
+    | FUN_CALL
+    | EOF
+    | DO
+    | WHILE
+    | NUMBER //any integer
     | OTHER of string // Could represent and ID in a more complex language, but for now, just a catch-all for anything else.
      
     // Member (of the type) function to get a token from a lexeme (String)
@@ -68,12 +91,51 @@ type Token =
             | "up" | "around" -> PREPOSITION 
             | "." | "!" | "?" -> EOS
             | "and" | "or" -> CONJUNCTION
+            //Start of New Token Set
+            | "," -> ADJ_SEP
+            | "read" -> READ
+            | "write" -> WRITE
+            | "+"| "-" -> ADD
+            | "*" | "/" -> MULTIPLY
+            | "<" | ">" | "==" -> RELATIONAL
+            | "until" -> UNTIL
+            | "repeat" -> REPEAT
+            | "if" -> IF
+            | "else" -> ELSE
+            | "then" -> THEN
+            | "endif" -> ENDIF
+            | "(" -> OPEN_P
+            | ")" -> CLOSE_P
+            | "=" -> ASSIGN
+            | "do" -> DO
+            | "while" -> WHILE
+            | "<-" -> FUN_CALL
+            | "$$" -> EOF
             | x -> OTHER str  // aka, ID
 
 
 
+(* OUR ADDED METHODS
 
-
+ * <PROGRAM> ::= <STMT_LIST> $$
+ * <STMT_LIST> ::= <STMT> <STMT_LIST> | ε
+ * <STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
+ * <ID_TAIL> ::= <FUNC_CALL> | assign
+ * <EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
+ * <EXPR_TAIL> ::= arith_op <EXPR> | ε
+ * <ARITH_OP> ::= + | - | * | /
+ * <REL_OPER> ::= > | < | ==
+ * <COND> ::= <EXPR> <REL_OPER> <EXPR>
+ * <ASGIGNMENT> ::= assign <EXPR> 
+ * <READ_STMT> ::= read id
+ * <WRITE_STMT> ::= write expr 
+ * <IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
+ * <FUN_CALL> ::= id open_p <PARAM_LIST> close_p
+ * <PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
+ * <PARAM_TAIL> ::= , <PARAM_LIST> | ε
+ * <WHILE_STMT> ::= while <COND> do <STMT_LIST> done
+ * <DO_STMT> ::= do <STMT_LIST> until <COND>
+ *)
 let matchToken (theExpectedToken: Token) theList =
     match theList with
     // resolve to the rest of the list when head is the expected type.
@@ -160,9 +222,26 @@ and vp =
     | x :: xs -> failwithf $"Expected Verb Phrase, but found {x}.\nRemaining tokens: {xs}"
     | [] -> failwith "Unexpected end of input while processing Verb Phrase."
 
+//<PROGRAM> ::= <STMT_LIST> $$
+and PROGRAM =
+    function
+    | STMT_LIST :: xs -> xs |> matchToken = EOF
 
+//<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
+and STMT_LIST = 
+    function
+    | STMT :: xs -> xs |> STMT_LIST
+    | xs -> xs
 
-
+//<STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
+and STMT = 
+    function
+    | ID :: xs -> xs |> ID_TAIL
+    | READ
+    | WRITE
+    | IF
+    | DO
+    | WHILE
 
 (* **********************************************************************************************
    YOU MAY LEAVE THE FOLLOWING CODE AS IS.  IT IS NOT NECESSARY TO MODIFY IT FOR THIS ASSIGNMENT.
