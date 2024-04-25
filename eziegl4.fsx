@@ -114,29 +114,6 @@ type Token =
             | "done" -> DONE
             | x -> OTHER str  // aka, ID
 
-
-
-(* OUR ADDED METHODS
-
-<PROGRAM> ::= <STMT_LIST> $$
-<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
-<STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
-<ID_TAIL> ::= <FUNC_CALL> | assign
-<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
-<EXPR_TAIL> ::= arith_op <EXPR> | ε
-<ARITH_OP> ::= + | - | * | /
-<REL_OP> ::= > | < | ==
-<COND> ::= <EXPR> <REL_OP> <EXPR>
-<ASGIGNMENT> ::= assign <EXPR> 
-<READ_STMT> ::= read id
-<WRITE_STMT> ::= write expr 
-<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
-<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
-<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
-<PARAM_TAIL> ::= , <PARAM_LIST> | ε
-<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
-<DO_STMT> ::= do <STMT_LIST> until <COND>
- *)
 let matchToken (theExpectedToken: Token) theList =
     match theList with
     // resolve to the rest of the list when head is the expected type.
@@ -223,32 +200,47 @@ and vp =
     | x :: xs -> failwithf $"Expected Verb Phrase, but found {x}.\nRemaining tokens: {xs}"
     | [] -> failwith "Unexpected end of input while processing Verb Phrase."
 
+(* OUR ADDED METHODS
+
+<PROGRAM> ::= <STMT_LIST> $$
+<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
+<STMT> ::= <ID> <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
+<ID_TAIL> ::= <FUNC_CALL> | assign
+<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
+<EXPR_TAIL> ::= arith_op <EXPR> | ε
+<ARITH_OP> ::= + | - | * | /
+<REL_OP> ::= > | < | ==
+<COND> ::= <EXPR> <REL_OP> <EXPR>
+<ASGIGNMENT> ::= assign <EXPR> 
+<READ_STMT> ::= read id
+<WRITE_STMT> ::= write expr 
+<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
+<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
+<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
+<PARAM_TAIL> ::= , <PARAM_LIST> | ε
+<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
+<DO_STMT> ::= do <STMT_LIST> until <COND>
+ *)
+
 //<PROGRAM> ::= <STMT_LIST> $$
 and program =
     function
     | x :: xs -> xs |> stmt_list |> matchToken = EOF
-and program2 lst = lst |> stmt_list |> matchToken = EOF
 
 //<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
 and stmt_list = 
     function
     | STMT :: xs -> xs |> stmt_list
-    | xs -> xs
-
+    | xs ->
 //<STMT> ::= id <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
 and stmt = 
     function
-    | ID :: xs -> xs |> ID_TAIL
-    | READ_STMT 
-    | WRITE_STMT
-    | IF_STMT
-    | DO_STMT
-    | WHILE_STMT
+    | ID :: xs -> xs |> id_tail
 
 //<ID_TAIL> ::= <FUN_CALL> | assign
 and id_tail = 
     function
-    | FUN_CALL
+    | x :: xs -> xs |> fun_call
     | ASSIGN
 
 //<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
