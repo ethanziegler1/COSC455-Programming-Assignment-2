@@ -226,12 +226,13 @@ and vp =
 //<PROGRAM> ::= <STMT_LIST> $$
 and program =
     function
-    | STMT_LIST :: xs -> xs |> matchToken = EOF
+    | x :: xs -> xs |> stmt_list |> matchToken = EOF
+and program2 lst = lst |> stmt_list |> matchToken = EOF
 
 //<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
 and stmt_list = 
     function
-    | STMT :: xs -> xs |> STMT_LIST
+    | STMT :: xs -> xs |> stmt_list
     | xs -> xs
 
 //<STMT> ::= id <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
