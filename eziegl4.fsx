@@ -130,75 +130,7 @@ let matchToken (theExpectedToken: Token) theList =
 
 // NOTE: The |> operator sends (pipes) the output of one function directly to the next one in line.
 // "and" just allows multiple, mutually recursive functions to be defined under a single "let"
-let rec parse theList = theList |> sentence
-
-// <sentence> : <np> <vp> <np> <sentence_tail>
-and sentence lst = lst |> np |> vp |> np |> sentenceTail
-
-// This serves as an example of possible pattern matches that will occur in other places as well.
-// <sentence_tail> ::= CONJUNCTION <sentence> | EOS
-and sentenceTail =
-    function
-    // Conjunction followed by the rest of the list
-    | CONJUNCTION :: xs -> sentence xs
-
-    // The token is the ONLY thing in the list
-    | [ EOS ] ->
-        printfn "Parse Successful!!!"
-        // Type cannot be infered from and empty list.
-        ([]: Token list)
-
-    // The token is the head of the list, but followed by additional elements
-    | EOS :: xs -> failwith $"End of sentence marker found, but not at end!\nRemaining Tokens {xs}"
-
-    // Not the token we are expecting, so we don't even care about the rest of the list
-    | x :: _ -> failwithf $"Expected EOS but found: {x}"
-
-    // A completely empty list
-    | [] -> failwith "Unexpected end of input while processing EOS"
-
-
-// *** This uses the matchToken function that was defined above.
-// <np> ::= ARTICLE <adj_list> NOUN <prep_phrase>
-and np =
-    function
-    | ARTICLE :: xs -> xs |> adjList |> matchToken NOUN |> pp
-    | x :: xs -> failwithf $"Expected article, but found {x}.\nremaining tokens: {xs}"
-    | [] -> failwith "article should not be empty"
-
-
-// <adj_list> ::= ADJECTIVE <adj_tail> | ε
-and adjList =
-    function
-    | ADJECTIVE :: xs -> xs |> adjTail
-    | xs -> xs // ε is permitted, so just resolve to what was passed if no other match.
-
-
-// <adj_tail> ::= COMMA <adj_list> | ε
-and adjTail =
-    function
-    | COMMA :: xs -> xs |> adjList
-    | xs -> xs // ε is permitted, so just resolve to what was passed if no other match.
-
-
-// <pp> ::= PREPOSITION <np> | ε
-and pp =
-    function
-    | PREPOSITION :: xs -> xs |> np
-    | xs -> xs // ε is permitted, so just resolve to what was passed if no other match.
-
-
-// <vp> ::=  ADVERB VERB | VERB
-and vp =
-    function
-    | VERB :: xs -> xs
-    | ADVERB :: xs -> xs |> matchToken VERB
-
-    // | ADVERB :: VERB :: xs -> xs  // Would be logically equivalent to the previous line.
-    // | ADVERB :: xs when (List.head xs = VERB) -> xs  // Would be logically equivalent to the previous line.
-
-    | x :: xs -> failwithf $"Expected Verb Phrase, but found {x}.\nRemaining tokens: {xs}"
-    | [] -> failwith "Unexpected end of input while processing Verb Phrase."
+let rec parse theList = theList |> program
 
 (* OUR ADDED METHODS
 
@@ -231,12 +163,17 @@ and program =
 //<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
 and stmt_list = 
     function
-    | STMT :: xs -> xs |> stmt_list
+    | x :: xs -> xs |> stmt |> stmt_list
     | xs -> xs
 //<STMT> ::= id <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
 and stmt = 
     function
-    | ID :: xs -> xs |> id_tail
+    | READ :: xs -> xs |> read_stmt
+    | WRITE :: xs -> xs |> write_stmt
+    | IF :: xs -> xs |> if_stmt
+    | DO :: xs -> xs |> do_stmt
+    | WHILE :: xs -> xs |> while_stmt
+    | ID :: xs -> xs |> matchToken ID |> id_tail
 
 //<ID_TAIL> ::= <FUN_CALL> | assign
 and id_tail = 
@@ -253,7 +190,7 @@ and expr =
 //<EXPR_TAIL> ::= arith_op <EXPR> | ε
 and expr_tail = 
     function 
-    | ARITH_OP :: xs -> xs |> expr
+    | arith_op :: xs -> xs |> expr
     | xs -> xs
 
 //<ARITH_OP> ::= + | - | * | /
@@ -273,12 +210,12 @@ and cond =
 //<ASGIGNMENT> ::= assign <EXPR> 
 and assignment =
     function   
-    ASSIGN:: xs -> xs |> expr
+    | ASSIGN :: xs -> xs |> expr
 
 //<READ_STMT> ::= read id
 and read_stmt =
     function 
-    |  READ:: xs -> xs |> id
+    | READ :: xs -> xs |> id
 
 //<WRITE_STMT> ::= write expr 
 and write_stmt =
@@ -288,12 +225,12 @@ and write_stmt =
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
 and if_stmt =
     function 
-    | IF :: xs -> xs |> cond |> matchToken THEN |> stmt |> matchToken ELSE |> stmt |> matchToken ENDIF
+    | IF :: xs -> xs |> if_stmt |> cond |> matchToken THEN |> stmt |> matchToken ELSE |> stmt |> matchToken ENDIF
 
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
 and fun_call = 
     function 
-    | x :: xs -> xs |> matchToken OPEN_P |> param_list |> matchToken CLOSE_P
+    | ID :: xs -> xs |> matchToken OPEN_P |> param_list |> matchToken CLOSE_P
 
 //<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
 and param_list =
