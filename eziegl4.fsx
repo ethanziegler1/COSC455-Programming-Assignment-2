@@ -225,13 +225,14 @@ and vp =
 //<PROGRAM> ::= <STMT_LIST> $$
 and program =
     function
-    | x :: xs -> xs |> stmt_list |> matchToken = EOF
+    | x :: xs -> xs |> stmt_list |> matchToken EOF
+    | _ -> failwith "Unexpected end of input while processing Program."
 
 //<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
 and stmt_list = 
     function
     | STMT :: xs -> xs |> stmt_list
-    | xs ->
+    | xs -> xs
 //<STMT> ::= id <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
 and stmt = 
     function
@@ -241,13 +242,13 @@ and stmt =
 and id_tail = 
     function
     | x :: xs -> xs |> fun_call
-    | ASSIGN
+    | ASSIGN :: xs -> xs
 
 //<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
 and expr = 
     function
     | ID :: xs -> xs |> expr_tail
-    | OPEN_P :: xs -> xs |> expr |> matchToken = CLOSE_P
+    | OPEN_P :: xs -> xs |> expr |> matchToken CLOSE_P
 
 //<EXPR_TAIL> ::= arith_op <EXPR> | ε
 and expr_tail = 
@@ -258,17 +259,16 @@ and expr_tail =
 //<ARITH_OP> ::= + | - | * | /
 and arith_op = 
     function
-    | xs -> xs |> matchToken = ARITH_OP
-
+    | xs -> matchToken ARITH_OP xs
 //<REL_OPER> ::= > | < | ==
 and rel_op = 
     function
-    | xs -> xs |> matchToken = REL_OP
+    | xs -> matchToken REL_OP xs
 
 //<COND> ::= <EXPR> <REL_OPER> <EXPR>
 and cond =
     function
-    | expr :: xs -> xs |> rel_op |> expr
+    | expr :: xs -> xs |> rel_op
 
 //<ASGIGNMENT> ::= assign <EXPR> 
 and assignment =
@@ -278,22 +278,22 @@ and assignment =
 //<READ_STMT> ::= read id
 and read_stmt =
     function 
-    |  READ:: xs -> xs |> matchToken = id
+    |  READ:: xs -> xs |> id
 
 //<WRITE_STMT> ::= write expr 
 and write_stmt =
     function 
-    |  WRITE:: xs -> xs |> matchToken = id
+    |  WRITE:: xs -> xs |> expr
 
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
 and if_stmt =
     function 
-    | IF :: xs -> xs |> cond |> THEN |> stmt |> ELSE |> stmt |> ENDIF
+    | IF :: xs -> xs |> cond |> matchToken THEN |> stmt |> matchToken ELSE |> stmt |> matchToken ENDIF
 
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
 and fun_call = 
     function 
-    | x :: xs -> xs |> OPEN_P |> param_list |> CLOSE_P
+    | x :: xs -> xs |> matchToken OPEN_P |> param_list |> matchToken CLOSE_P
 
 //<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
 and param_list =
@@ -309,11 +309,11 @@ and param_tail =
 //<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
 and while_stmt = 
     function
-    |WHILE :: xs -> xs |> cond |> DO |> stmt_list |> DONE
+    |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
 and do_stmt = 
     function
-    | DO :: xs -> xs |> stmt_list |> UNTIL |> cond
+    | DO :: xs -> xs |> stmt_list |> matchToken UNTIL |> cond
 
 (* **********************************************************************************************
    YOU MAY LEAVE THE FOLLOWING CODE AS IS.  IT IS NOT NECESSARY TO MODIFY IT FOR THIS ASSIGNMENT.
