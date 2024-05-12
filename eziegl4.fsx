@@ -77,7 +77,6 @@ type Token =
             | "read" -> READ
             | "write" -> WRITE
             | "+"| "-" | "*" | "/" -> ARITH_OP
-            
             | "<" | ">" | "==" -> REL_OP
             | "until" -> UNTIL
             | "repeat" -> REPEAT
@@ -108,7 +107,11 @@ let matchToken (theExpectedToken: Token) theList =
 
 
 
-
+let debugDisplay msg list = 
+    // NOTE: the "%A" in the interpolated string will print the whole list,
+    // instead of just the first few elements.
+    printfn $"{msg}\n\tRemaining List is: %A{list}\n"
+    list
 // NOTE: The |> operator sends (pipes) the output of one function directly to the next one in line.
 // "and" just allows multiple, mutually recursive functions to be defined under a single "let"
 let rec parse theList = theList |> program
@@ -137,7 +140,7 @@ let rec parse theList = theList |> program
 
 //<PROGRAM> ::= <STMT_LIST> $$
 and program xs =
-    xs |> stmt_list |> ``$$`` // Note: ```` is a way to escape reserved words
+    xs |> stmt_list |> debugDisplay "Program" |> ``$$`` // Note: ```` is a way to escape reserved words
 
 and ``$$`` =
     function
@@ -146,12 +149,9 @@ and ``$$`` =
 
 //<STMT_LIST> ::= <STMT> <STMT_LIST> | ε
 and stmt_list lst =
-    // Since FIRST(stmt_list) is { WRITE, FOR, IDany of the following, then it is a stmt, otherwise, it is an epsilon production.
-    // "_" is a wildcard, so it will match any token. We don't care what it is, just that it is there.
     match lst with
-    | WRITE :: _     
-    | ID _ :: _   -> lst |> stmt |> stmt_list
-    | x -> x // ε case, so just return the list unchanged.
+    | _ :: _ -> lst |> stmt |> stmt_list
+    | xs -> xs // ε
     
 //<STMT> ::= id <ID_TAIL> | <READ_STMT> | <WRITE_STMT> | <IF_STMT> | <DO_STMT>| <WHILE_STMT>
 and stmt lst =
@@ -160,19 +160,20 @@ and stmt lst =
 
     match lst with
     | ID _ :: ASSIGN :: xs -> xs |> id_tail
-    | READ :: xs -> xs |> read_stmt
-    | WRITE :: xs -> xs |> write_stmt
-    | IF :: xs -> xs |> if_stmt
-    | DO :: xs -> xs |> do_stmt
+    | READ :: xs -> xs |> expr
+    | WRITE :: xs -> xs |> expr
+    | IF :: xs -> xs |> expr
+    | DO :: xs -> xs |> expr
     | WHILE :: xs -> xs |> while_stmt
 
     | _ -> failwithf $"Not a valid statement: %A{lst}" // no empty case allowed
 
 //<ID_TAIL> ::= <FUN_CALL> | assign
-and id_tail = 
-    function
-    | FUN_CALL :: xs -> xs |> matchToken ASSIGN
-    | _ -> failwithf $"Invalid ID_TAIL"
+and id_tail lst = 
+    match lst with
+    | FUN_CALL :: xs -> xs |> fun_call
+    | ASSIGN :: xs -> xs |> expr
+    | _ -> failwithf $"Not a valid ID Tail"
 
 //<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
 and expr = 
@@ -184,7 +185,7 @@ and expr =
 //<EXPR_TAIL> ::= arith_op <EXPR> | ε
 and expr_tail = 
     function 
-    | ARITH_OP :: xs -> xs |> expr
+    | ARITH_OP :: xs -> xs |> expr |> expr_tail
     | xs -> xs
 
 
@@ -192,17 +193,6 @@ and expr_tail =
 and cond lst =
     lst |> expr |> matchToken REL_OP |> expr
 
-//<WRITE_STMT> ::= write expr
-and write_stmt =
-    function
-    | WRITE :: xs -> xs |> expr
-    | _ -> failwithf $"Not Valid Write Statment"
-    
-//<READ_STMT> ::= read id
-and read_stmt =
-    function
-    | READ :: ID _ :: xs -> xs 
-    | _ -> failwithf $"Not Valid Read Statment"
 
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
 and if_stmt =
@@ -237,6 +227,7 @@ and do_stmt =
     function
     | DO :: xs -> xs |> stmt_list |> matchToken UNTIL |> cond
     | _ -> failwithf $"Not Valid Do Statment"
+
 
 
 (* **********************************************************************************************
