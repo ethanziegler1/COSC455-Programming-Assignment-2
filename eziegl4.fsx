@@ -196,21 +196,25 @@ and cond lst =
 and write_stmt =
     function
     | WRITE :: xs -> xs |> expr
+    | _ -> failwithf $"Not Valid Write Statment"
     
 //<READ_STMT> ::= read id
 and read_stmt =
     function
     | READ :: ID _ :: xs -> xs 
+    | _ -> failwithf $"Not Valid Read Statment"
 
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
 and if_stmt =
     function
     | IF :: xs -> xs |> cond |> matchToken THEN |> stmt |> matchToken ELSE |> stmt |> matchToken ENDIF
+    | _ -> failwithf $"Not Valid If Statment"
 
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
 and fun_call = 
     function 
     | ID _ :: OPEN_P :: xs -> xs |> param_list |> matchToken CLOSE_P
+    | _ -> failwithf $"Not Valid Function Call"
 
 //<PARAM_LIST> ::= <EXPR> <PARAM_TAIL>
 and param_list lst =
@@ -226,10 +230,13 @@ and param_tail =
 and while_stmt = 
     function
     |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
+    | _ -> failwithf $"Not Valid While Statment"
+
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
 and do_stmt = 
     function
     | DO :: xs -> xs |> stmt_list |> matchToken UNTIL |> cond
+    | _ -> failwithf $"Not Valid Do Statment"
 
 
 (* **********************************************************************************************
