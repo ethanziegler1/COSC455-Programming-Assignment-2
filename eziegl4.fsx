@@ -112,7 +112,6 @@ let matchToken (theExpectedToken: Token) theList =
 // NOTE: The |> operator sends (pipes) the output of one function directly to the next one in line.
 // "and" just allows multiple, mutually recursive functions to be defined under a single "let"
 let rec parse theList = theList |> program
-let rec parse theList = theList |> program
 
 (* OUR ADDED METHODS
 
@@ -161,7 +160,7 @@ and stmt lst =
 
     match lst with
     | ID _ :: ASSIGN :: xs -> xs |> id_tail
-    | READ :: ID _ :: xs -> xs |> read_stmt
+    | READ :: xs -> xs |> read_stmt
     | WRITE :: xs -> xs |> write_stmt
     | IF :: xs -> xs |> if_stmt
     | DO :: xs -> xs |> do_stmt
@@ -173,44 +172,35 @@ and stmt lst =
 and id_tail = 
     function
     | FUN_CALL :: xs -> xs |> matchToken ASSIGN
+    | _ -> failwithf $"Invalid ID_TAIL"
 
 //<EXPR> ::= id <EXPR_TAIL> | open_p <EXPR> close_p
 and expr = 
     function
     | ID _ :: xs -> xs |> expr_tail
     | OPEN_P :: xs -> xs |> expr |> matchToken CLOSE_P
+    | _ -> failwithf $"Invalid expression"
 
 //<EXPR_TAIL> ::= arith_op <EXPR> | ε
 and expr_tail = 
     function 
-    | arith_op :: xs -> xs |> expr
+    | ARITH_OP :: xs -> xs |> expr
     | xs -> xs
 
-//<ARITH_OP> ::= + | - | * | /
-and arith_op = 
-    function
-    | xs -> xs |> matchToken ARITH_OP
 
-//<REL_OPER> ::= > | < | ==
-and rel_op = 
-    function
-    | xs -> xs |> matchToken REL_OP
-
-//<COND> ::= <EXPR> <REL_OPER> <EXPR>
+//<COND> ::= <EXPR> REL_OPER <EXPR>
 and cond lst =
-    lst |> expr |> rel_op |> expr
-
-
-//<READ_STMT> ::= read id
-and read_stmt lst =
-    match lst with
-    READ :: xs -> xs |> ID _
+    lst |> expr |> matchToken REL_OP |> expr
 
 //<WRITE_STMT> ::= write expr
-and write_stmt lst =
-    match lst with
-    WRITE :: xs -> xs |> expr
-
+and write_stmt =
+    function
+    | WRITE :: xs -> xs |> expr
+    
+//<READ_STMT> ::= read id
+and read_stmt =
+    function
+    | READ :: ID _ :: xs -> xs 
 
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
 and if_stmt =
@@ -236,14 +226,11 @@ and param_tail =
 and while_stmt = 
     function
     |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
-    |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
 and do_stmt = 
     function
     | DO :: xs -> xs |> stmt_list |> matchToken UNTIL |> cond
-and result lst = function
-    | [] -> []
-    | x :: _ -> failwith "Broken at end"
+
 
 (* **********************************************************************************************
    YOU MAY LEAVE THE FOLLOWING CODE AS IS.  IT IS NOT NECESSARY TO MODIFY IT FOR THIS ASSIGNMENT.
