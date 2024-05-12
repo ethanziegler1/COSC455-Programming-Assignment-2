@@ -112,6 +112,7 @@ let matchToken (theExpectedToken: Token) theList =
 // NOTE: The |> operator sends (pipes) the output of one function directly to the next one in line.
 // "and" just allows multiple, mutually recursive functions to be defined under a single "let"
 let rec parse theList = theList |> program
+let rec parse theList = theList |> program
 
 (* OUR ADDED METHODS
 
@@ -182,7 +183,7 @@ and expr =
 //<EXPR_TAIL> ::= arith_op <EXPR> | ε
 and expr_tail = 
     function 
-    | ARITH_OP :: xs -> xs |> expr
+    | arith_op :: xs -> xs |> expr
     | xs -> xs
 
 //<ARITH_OP> ::= + | - | * | /
@@ -234,6 +235,7 @@ and param_tail =
 //<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
 and while_stmt = 
     function
+    |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
     |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
 and do_stmt = 
