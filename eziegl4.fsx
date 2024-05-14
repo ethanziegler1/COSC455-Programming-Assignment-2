@@ -203,16 +203,16 @@ and expr_tail =
 and cond lst =
     lst |> expr |> matchToken REL_OP |> expr
 
-//<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
+//<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE>
 and if_stmt =
     function
-    | xs -> xs |> cond |> matchToken THEN |> stmt |> else_stmt |> matchToken ENDIF
+    | xs -> xs |> cond |> matchToken THEN |> stmt |> else_stmt
 
-//<ELSE_STMT> ::= <ELSE> <STMT_LIST> | <EMPTY>
-and else_stmt =
-    function
-    | ELSE :: xs -> xs |> stmt_list
-    | xs -> xs
+//<ELSE_STMT> ::= <ELSE> <STMT_LIST> <ENDIF> | <ENDIF>
+and else_stmt = function
+    | ELSE :: xs -> xs |> stmt_list |> matchToken ENDIF 
+    | ENDIF :: xs -> xs
+    | _ -> failwithf $"Not a valid else stmt"
 
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
 and fun_call = 
