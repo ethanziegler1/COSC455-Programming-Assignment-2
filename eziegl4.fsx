@@ -48,7 +48,6 @@ type Token =
     //Start of new Token Set
     | ADJ_SEP
     | READ // read statement  
-    | LET
     | WRITE
     | ARITH_OP
     | REL_OP
@@ -66,7 +65,6 @@ type Token =
     | DO
     | WHILE
     | DONE
-    | NUMBER //any integer
     | ID of string // Could represent and ID in a more complex language, but for now, just a catch-all for anything else.
      
     // Member (of the type) function to get a token from a lexeme (String)
@@ -159,14 +157,27 @@ and stmt lst =
     printfn $"In stmt rule: The token list  = %A{lst}" // the is a format specifier will print the whole list
 
     match lst with
-    | ID _ :: ASSIGN :: xs -> xs |> id_tail
-    | READ :: xs -> xs |> expr
-    | WRITE :: xs -> xs |> expr
-    | IF :: xs -> xs |> expr
-    | DO :: xs -> xs |> expr
+    | ID _ :: xs -> xs |> id_tail
+    | READ :: xs -> xs |> read_stmt
+    | WRITE :: xs -> xs |> write_stmt
+    | IF :: xs -> xs |> if_stmt
+    | DO :: xs -> xs |> do_stmt
     | WHILE :: xs -> xs |> while_stmt
 
     | _ -> failwithf $"Not a valid statement: %A{lst}" // no empty case allowed
+
+//<READ_STMT> ::= read id
+and read_stmt  =
+    function
+    | ID _ :: xs -> xs
+    | _ -> failwithf $"Not a valid read stmt"
+
+//<WRITE_STMT> ::= write expr 
+and write_stmt  =
+    function
+    | xs ->
+        printfn $"in write stmt" // Again, for debugging.
+        xs |> expr
 
 //<ID_TAIL> ::= <FUN_CALL> | assign
 and id_tail lst = 
@@ -188,17 +199,20 @@ and expr_tail =
     | ARITH_OP :: xs -> xs |> expr |> expr_tail
     | xs -> xs
 
-
 //<COND> ::= <EXPR> REL_OPER <EXPR>
 and cond lst =
     lst |> expr |> matchToken REL_OP |> expr
 
-
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE> <STMT> <ENDIF>
 and if_stmt =
     function
-    | IF :: xs -> xs |> cond |> matchToken THEN |> stmt |> matchToken ELSE |> stmt |> matchToken ENDIF
-    | _ -> failwithf $"Not Valid If Statment"
+    | xs -> xs |> cond |> matchToken THEN |> stmt |> else_stmt |> matchToken ENDIF
+
+//<ELSE_STMT> ::= <ELSE> <STMT_LIST> | <EMPTY>
+and else_stmt =
+    function
+    | ELSE :: xs -> xs |> stmt_list
+    | xs -> xs
 
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
 and fun_call = 
@@ -219,14 +233,12 @@ and param_tail =
 //<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
 and while_stmt = 
     function
-    |WHILE :: xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
-    | _ -> failwithf $"Not Valid While Statment"
+    | xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
 
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
 and do_stmt = 
     function
-    | DO :: xs -> xs |> stmt_list |> matchToken UNTIL |> cond
-    | _ -> failwithf $"Not Valid Do Statment"
+    | xs -> xs |> stmt_list |> matchToken UNTIL |> cond
 
 
 
