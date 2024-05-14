@@ -278,12 +278,12 @@ let main () =
             let tokenList = getTokenList str
             printfn $"Tokens Before Parsing: %A{tokenList}"
             let parsedList = parse tokenList
-
+            
             if (parsedList.Length > 0) then
                 printfn $"Parsing Failed because we have extra tokens! %A{parsedList}"
                 printfn $"Extra Tokens:\t%A{parsedList}"
             else
-                printfn "Done!"
+                printfn $"The Sentence %A{str} follows the grammar."
 
         // If an exception ("failwith") is thrown, display the error message.
         with Failure msg ->
