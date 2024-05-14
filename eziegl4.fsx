@@ -206,13 +206,13 @@ and cond lst =
 //<IF_STMT> ::= <IF> <CONDITION> <THEN> <STMT> <ELSE>
 and if_stmt =
     function
-    | xs -> xs |> cond |> matchToken THEN |> stmt |> else_stmt
+    | xs -> xs |> cond |> matchToken THEN |> stmt |> else_stmt |> matchToken ENDIF
 
 //<ELSE_STMT> ::= <ELSE> <STMT_LIST> <ENDIF> | <ENDIF>
-and else_stmt = function
-    | ELSE :: xs -> xs |> stmt_list |> matchToken ENDIF 
-    | ENDIF :: xs -> xs
-    | _ -> failwithf $"Not a valid else stmt"
+and else_stmt = 
+    function
+    | ELSE :: xs -> xs |> stmt_list |> matchToken ENDIF
+    | xs -> xs
 
 //<FUN_CALL> ::= id open_p <PARAM_LIST> close_p
 and fun_call = 
@@ -233,12 +233,12 @@ and param_tail =
 //<WHILE_STMT> ::= while <COND> do <STMT_LIST> done
 and while_stmt = 
     function
-    | xs -> xs |> cond |> matchToken DO |> stmt_list |> matchToken DONE
+    | xs -> xs |> cond |> matchToken DO |> stmt |> matchToken DONE
 
 //<DO_STMT> ::= do <STMT_LIST> until <COND>
 and do_stmt = 
     function
-    | xs -> xs |> stmt_list |> matchToken UNTIL |> cond
+    | xs -> xs |> stmt |> matchToken UNTIL |> cond
 
 
 
